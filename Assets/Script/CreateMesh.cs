@@ -51,7 +51,7 @@ public class CreateMesh : MonoBehaviour
 
         this.gameObject.layer = c_layerMask;
 
-        Debug.Log(this.gameObject.layer);
+       // Debug.Log(this.gameObject.layer);
 
         GetComponent<Camera>().cullingMask = 1 << this.gameObject.layer;
         GetComponent<Camera>().targetDisplay = CameraNum + 1;
@@ -145,21 +145,147 @@ public class CreateMesh : MonoBehaviour
                 UpdateNodePosition(() => num = num - NodeRes);
             }
 
-            if (moveMode == MoveMode.Move_H&&Input.GetKeyDown(KeyCode.F1)) {
+            if (moveMode == MoveMode.Move_H && Input.GetKeyDown(KeyCode.F1))
+            {
                 cubesNodes[num].setVerticeAlignment_H(num, currentSelected);
             }
-
-            if (moveMode == MoveMode.Move_V && Input.GetKeyDown(KeyCode.F1))
+            else if (moveMode == MoveMode.Move_V && Input.GetKeyDown(KeyCode.F1))
             {
                 cubesNodes[num].setVerticeAlignment_V(num, currentSelected);
             }
+            else if (Input.GetKeyDown(KeyCode.F1)) {
 
-
+                AlignmentAll();
+            }
         }
 
-        
+    }
 
 
+    private List<Node> GetRow(int rowNun) {
+        List<Node> temp = new List<Node>();
+
+
+        for (int j = 0; j < NodeRes; j++)
+        {
+            int _num = rowNun * NodeRes + j;
+
+            temp.Add(cubesNodes[_num]);
+
+            //cubesNodes[_num].SetColor(Color.black);
+        }
+        return temp;
+    }
+
+
+    private List<Node> GetColumn(int ColumnNum) {
+        List<Node> temp = new List<Node>();
+
+        for (int j = 0; j < NodeRes; j++)
+        {
+            int _num = j * NodeRes + ColumnNum;
+
+            temp.Add(cubesNodes[_num]);
+
+            //cubesNodes[_num].SetColor(Color.black);
+        }
+        return temp;
+    }
+
+    delegate List<Node> getRowOrCloumn(int val);
+    enum xz { x,z}
+   
+    private float ReturnMinORMax(bool b, getRowOrCloumn _getRowOrCloumn, xz _xz)
+    {
+        List<Node> tempFirst = new List<Node>();
+        List<float> values = new List<float>();
+
+        if (b) {
+            tempFirst = _getRowOrCloumn(0);
+        }
+        else {
+            tempFirst = _getRowOrCloumn(NodeRes - 1);
+        }
+           
+        foreach (Node item in tempFirst)
+        {
+            switch (_xz)
+            {
+                case xz.x:
+                    values.Add(item.transform.position.x);
+                    break;
+                case xz.z:
+                    values.Add(item.transform.position.z);
+                    break;
+                default:
+                    break;
+            }
+          
+        }
+
+
+
+        values.Sort();
+
+        if (b)
+        {
+
+            return values[0];
+        }
+        else {
+            values.Reverse();
+            
+            return values[0];
+        }
+    }
+
+
+
+
+    private void AlignmentAll() {
+        List<Node> temp = new List<Node>();
+        float minZ, maxZ;
+        getRowOrCloumn getROW = new getRowOrCloumn(GetRow);
+        getRowOrCloumn getCOLUMN = new getRowOrCloumn(GetColumn);
+
+        minZ= Mathf.Abs( ReturnMinORMax(true, getROW,xz.z));
+        maxZ =-Mathf.Abs( ReturnMinORMax(false, getROW,xz.z));
+
+       
+
+        float value =(maxZ -minZ)/(NodeRes-1);
+
+
+
+        for (int i = 0; i < NodeRes; i++)
+        {
+            temp = GetRow(i);
+
+            foreach (var item in temp)
+            {
+                Vector3 M_vector3 = new Vector3(item.transform.position.x, item.transform.position.y, minZ + value * i);
+
+                item.SetVertices(M_vector3, item.Id - 1);
+            }
+        }
+
+
+        float minX, maxX;
+        minX = ReturnMinORMax(true, getCOLUMN, xz.x);
+        maxX = ReturnMinORMax(false, getCOLUMN, xz.x);
+        value = (maxX - minX) / (NodeRes - 1);
+
+        for (int i = 0; i < NodeRes; i++)
+        {
+            temp = GetColumn(i);
+
+            foreach (var item in temp)
+            {
+                Vector3 M_vector3 = new Vector3(minX+value*i , item.transform.position.y, item.transform.position.z);
+
+                item.SetVertices(M_vector3, item.Id - 1);
+            }
+        }
     }
 
 
@@ -304,7 +430,7 @@ public class CreateMesh : MonoBehaviour
                 {
                     for (int column = -2; column <= 2; column++)
                     {
-                        Debug.Log(currentR);
+                       // Debug.Log(currentR);
                         if (currentC + column > 0 && currentC + column <= createMesh.NodeRes) {
                             if (currentR + row >= 0 && currentR + row < createMesh.NodeRes) {
                                 int val = _num + column + createMesh.NodeRes * row;
@@ -448,6 +574,7 @@ public class CreateMesh : MonoBehaviour
 
             renderMesh();
         }
+
 
 
         public void setVerticeAlignment_V(int _num, List<Node> nodes)
